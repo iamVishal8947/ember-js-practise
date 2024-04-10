@@ -1,0 +1,275 @@
+Certainly! Let's refactor the code to improve it and provide a clear separation of concerns using Ember's conventions. We'll create separate components for the game board, rows, squares, and implement the game logic within a service.First, let's create the necessary components and service:ember generate component game-board
+
+ember generate component row
+
+ember generate component square
+
+ember generate service game-logic
+
+Now, let's write the code for each component and service:// app/components/game-board.js
+
+import Component from '@glimmer/component';
+
+import { inject as service } from '@ember/service';
+
+
+
+export default class GameBoardComponent extends Component {
+
+  @service gameLogic;
+
+}
+
+<!-- app/templates/components/game-board.hbs -->
+
+<div class="game-board">
+
+  {{#each this.gameLogic.rows as |row index|}}
+
+    <Row @row={{row}} @rowIndex={{index}} />
+
+  {{/each}}
+
+  <div class="status">{{this.gameLogic.gameStatus}}</div>
+
+  <button {{on "click" this.gameLogic.restartGame}}>Restart</button>
+
+</div>
+
+// app/components/row.js
+
+import Component from '@glimmer/component';
+
+import { inject as service } from '@ember/service';
+
+
+
+export default class RowComponent extends Component {
+
+  @service gameLogic;
+
+}
+
+<!-- app/templates/components/row.hbs -->
+
+<div class="row">
+
+  {{#each this.row as |square index|}}
+
+    <Square @value={{square}} @onClick={{fn this.gameLogic.handleClick index}} />
+
+  {{/each}}
+
+</div>
+
+// app/components/square.js
+
+import Component from '@glimmer/component';
+
+
+
+export default class SquareComponent extends Component {}
+
+<!-- app/templates/components/square.hbs -->
+
+<div class="square" {{on "click" this.onClick}}>
+
+  {{@value}}
+
+</div>
+
+// app/services/game-logic.js
+
+import Service from '@ember/service';
+
+
+
+const WINNING_COMBINATIONS = [
+
+  [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+
+  [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+
+  [0, 4, 8], [2, 4, 6]              // Diagonals
+
+];
+
+
+
+export default class GameLogicService extends Service {
+
+  squares = Array(9).fill(null);
+
+  currentPlayer = 'X';
+
+  gameStatus = null;
+
+
+
+  get rows() {
+
+    return [
+
+      this.squares.slice(0, 3),
+
+      this.squares.slice(3, 6),
+
+      this.squares.slice(6)
+
+    ];
+
+  }
+
+
+
+  handleClick(index) {
+
+    if (!this.gameStatus && !this.squares[index]) {
+
+      this.squares[index] = this.currentPlayer;
+
+      if (this.checkForWinner()) {
+
+        this.gameStatus = `${this.currentPlayer} wins!`;
+
+      } else if (this.isBoardFull()) {
+
+        this.gameStatus = "It's a draw!";
+
+      } else {
+
+        this.currentPlayer = this.currentPlayer === 'X' ? 'O' : 'X';
+
+      }
+
+    }
+
+  }
+
+
+
+  checkForWinner() {
+
+    for (let combo of WINNING_COMBINATIONS) {
+
+      const [a, b, c] = combo;
+
+      if (this.squares[a] && this.squares[a] === this.squares[b] && this.squares[a] === this.squares[c]) {
+
+        return true;
+
+      }
+
+    }
+
+    return false;
+
+  }
+
+
+
+  isBoardFull() {
+
+    return this.squares.every(square => square !== null);
+
+  }
+
+
+
+  restartGame() {
+
+    this.squares = Array(9).fill(null);
+
+    this.currentPlayer = 'X';
+
+    this.gameStatus = null;
+
+  }
+
+}
+
+/* app/styles/components/game-board.css */
+
+.game-board {
+
+  display: grid;
+
+  grid-template-columns: repeat(3, 100px);
+
+  grid-gap: 5px;
+
+  width: 320px;
+
+  margin: 0 auto;
+
+}
+
+
+
+.row {
+
+  display: flex;
+
+}
+
+
+
+.square {
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  width: 100px;
+
+  height: 100px;
+
+  font-size: 24px;
+
+  background-color: #f0f0f0;
+
+  cursor: pointer;
+
+}
+
+
+
+.status {
+
+  margin-top: 20px;
+
+  font-size: 18px;
+
+}
+
+
+
+button {
+
+  margin-top: 20px;
+
+  padding: 10px 20px;
+
+  font-size: 16px;
+
+  background-color: #007bff;
+
+  color: #fff;
+
+  border: none;
+
+  cursor: pointer;
+
+}
+
+
+
+button:hover {
+
+  background-color: #0056b3;
+
+}
+
+Explanation:We have separate components for GameBoard, Row, and Square. These components are responsible for rendering different parts of the game board.The GameLogic service encapsulates the game logic, including handling clicks, checking for a winner, and restarting the game.Each component interacts with the GameLogic service to update the game state and handle user interactions.The template files (*.hbs) define the structure of each component's UI, while the CSS file (*.css) provides styling for the components.We use Ember's conventions, such as injecting services into components, to manage the application state and logic efficiently.By separating concerns and following Ember's conventions, the codebase becomes more modular, maintainable, and easier to understand.
